@@ -10,6 +10,13 @@ SELECT count(INDEX_LENGTH)/(SELECT sum(DATA_LENGTH) FROM INFORMATION_SCHEMA.TABL
 
 ![alt text](https://github.com/mxssclxck/hw-12.05/blob/main/img/1.png)
 
+## Доработка задание 1.
+
+```SQL
+SELECT ROUND(SUM(INDEX_LENGTH)/SUM(DATA_LENGTH)*100,2) AS Index_to_table_ratio FROM information_schema.TABLES WHERE TABLE_SCHEMA = 'sakila';
+```
+![alt text](https://github.com/mxssclxck/hw-12.05/blob/main/img/1-1.png)
+
 ## Задание 2
 Выполните explain analyze следующего запроса:
 ```SQL
@@ -59,6 +66,34 @@ GROUP BY c.customer_id , f.title;
 ```
 
 ![alt text](https://github.com/mxssclxck/hw-12.05/blob/main/img/2.png)
+
+## Доработка задание 2
+
+```SQL
+EXPLAIN ANALYZE
+SELECT CONCAT(c.last_name, ' ', c.first_name), SUM(p.amount)
+FROM payment p
+JOIN rental r ON p.payment_date = r.rental_date
+JOIN customer c ON r.customer_id = c.customer_id 
+JOIN inventory i ON i.inventory_id = r.inventory_id
+WHERE p.payment_date BETWEEN '2005-07-30 00:00:00' AND '2005-07-30 23:59:59'
+GROUP BY c.customer_id;
+                        
+-> Limit: 200 row(s)  (actual time=6.697..6.748 rows=200 loops=1)
+    -> Table scan on <temporary>  (actual time=6.695..6.732 rows=200 loops=1)
+        -> Aggregate using temporary table  (actual time=6.694..6.694 rows=391 loops=1)
+            -> Nested loop inner join  (cost=799.41 rows=645) (actual time=0.049..5.919 rows=642 loops=1)
+                -> Nested loop inner join  (cost=576.43 rows=645) (actual time=0.045..4.875 rows=642 loops=1)
+                    -> Nested loop inner join  (cost=350.73 rows=634) (actual time=0.035..2.074 rows=634 loops=1)
+                        -> Filter: (r.rental_date between '2005-07-30 00:00:00' and '2005-07-30 23:59:59')  (cost=128.83 rows=634) (actual time=0.020..0.911 rows=634 loops=1)
+                            -> Covering index range scan on r using rental_date over ('2005-07-30 00:00:00' <= rental_date <= '2005-07-30 23:59:59')  (cost=128.83 rows=634) (actual time=0.018..0.454 rows=634 loops=1)
+                        -> Single-row index lookup on c using PRIMARY (customer_id=r.customer_id)  (cost=0.25 rows=1) (actual time=0.002..0.002 rows=1 loops=634)
+                    -> Index lookup on p using payment_date_idx (payment_date=r.rental_date)  (cost=0.25 rows=1) (actual time=0.003..0.004 rows=1 loops=634)
+                -> Single-row covering index lookup on i using PRIMARY (inventory_id=r.inventory_id)  (cost=0.25 rows=1) (actual time=0.001..0.001 rows=1 loops=642)
+
+```
+
+![alt text](https://github.com/mxssclxck/hw-12.05/blob/main/img/2-1.png)
 
 ## Задание 3*
 Самостоятельно изучите, какие типы индексов используются в PostgreSQL. Перечислите те индексы, которые используются в PostgreSQL, а в MySQL — нет.
